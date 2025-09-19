@@ -1,0 +1,391 @@
+<!-- ####################### -->
+<!-- # REGLAS PARA WINDOWS # -->
+<!-- ####################### -->
+
+<!-- ID 111001 - 111010 -->
+<group name="windows-custom,">
+  <!-- Windows: conexión de un USB -->
+  <rule id="111001" level="3">
+    <if_sid>60009</if_sid>
+    <field name="win.system.providerName">^Microsoft-Windows-DriverFrameworks-UserMode$</field>
+    <field name="win.system.eventID">^2003$</field>
+    <options>no_full_log</options>
+    <description>Windows: Se ha conectado un USB de $(hostname)</description>
+    <mitre>a
+      <id>T1200</id>
+    </mitre>
+    <group>gpg13_4.8,spedia,spedia_USBConnected</group>
+  </rule>
+
+  <!-- Windows: desconexión de un USB -->
+  <rule id="111002" level="3">
+    <if_sid>60009</if_sid>
+    <field name="win.system.providerName">^Microsoft-Windows-DriverFrameworks-UserMode$</field>
+    <field name="win.system.eventID">^1008$</field>
+    <options>no_full_log</options>
+    <description>Windows: Se ha desconectado un USB de $(hostname)</description>
+    <mitre>
+      <id>T1025</id>
+    </mitre>
+  </rule>
+</group>
+
+<!-- ##################### -->
+<!-- # REGLAS PARA LINUX # -->
+<!-- ##################### -->
+
+<!-- ID 111011 - 111020 -->
+<group name="linux-custom,">
+  <!-- Linux: conexión de un USB -->
+  <rule id="111011" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="type">^usb_device</field>
+    <field name="serial">\w+</field>
+    <description>Linux: Se ha conectado el USB con $(vendor) $(model) a $(hostname).</description>
+    <mitre>
+      <id>T1200</id>
+    </mitre>
+    <group>spedia,spedia_USBConnected</group>
+  </rule>
+  
+  <!-- Linux: desconexión de un USB -->
+  <rule id="111012" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="type">^usb_device</field>
+    <field name="device">\w+</field>
+    <description>Linux: Se ha desconectado el USB de $(hostname).</description>
+    <mitre>
+      <id>T1052.001</id>
+    </mitre>
+  </rule>
+</group>
+
+<!-- ##################### -->
+<!-- # REGLAS PARA MacOS # -->
+<!-- ##################### -->
+
+<!-- ID 111021 - 111030 -->
+<group name="macos-custom,">
+  <!-- MacOS: conexión de un USB -->
+  <rule id="111021" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="eventType">^USBConnected$</field>
+    <description>MacOS: Se ha conectado un USB $(deviceInfo.productName).</description>
+    <mitre>
+      <id>T1200</id>
+    </mitre>
+    <group>gpg13_4.8,</group>
+  </rule>
+  
+  <!-- MacOS: desconexión de un USB -->
+  <rule id="111022" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="eventType">^USBDisconnected$</field>
+    <description>MacOS: Se ha desconectado un USB $(deviceInfo.productName).</description>
+    <mitre>
+      <id>T1025</id>
+    </mitre>
+  </rule>
+</group>
+
+<!-- ######################### -->
+<!-- # DECODE PROPIAS REGLAS # -->
+<!-- ######################### -->
+
+<!-- ID 111031 - 111040 -->
+<group name="log-custom,">
+  <!-- Monitorización dentro de un USB: añadir -->
+  <rule id="111031" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="activity">\w+</field>
+    <description>USB: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+  </rule>
+
+  <rule id="111032" level="5" timeframe="120">
+    <if_matched_sid>111001</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <field name="activity">^file_add$</field>
+    <description>Windows: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+
+  <rule id="111033" level="5" timeframe="120">
+    <if_matched_sid>111011</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <field name="activity">^file_add$</field>
+    <description>Linux: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+    </mitre>
+    <group>spedia, spedia_USBModify, syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+
+  <rule id="111034" level="5" timeframe="120">
+    <if_matched_sid>111021</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <field name="activity">^file_add$</field>
+    <description>MacOS: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+
+
+  <!-- Monitorización dentro de un USB: eliminar -->
+  <rule id="111035" level="5" timeframe="120">
+    <if_matched_sid>111001</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <field name="activity">^file_delete$</field>
+    <description>Windows: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+      <id>T1070.004</id>
+      <id>T1485</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_deleted,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+
+  <rule id="111036" level="5" timeframe="120">
+    <if_matched_sid>111011</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <field name="activity">^file_delete$</field>
+    <description>Linux: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+      <id>T1070.004</id>
+      <id>T1485</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_deleted,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+
+  <rule id="111037" level="5" timeframe="120">
+    <if_matched_sid>111021</if_matched_sid>
+    <if_sid>111031</if_sid>
+    <!--field name="activity">^file_delete$</field-->
+    <description>MacOS: Se ha realizado la operación $(activity) del archivo $(filename) en $(hostname).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1056</id>
+      <id>T1052.001</id>
+      <id>T1070.004</id>
+      <id>T1485</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_deleted,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+</group>
+
+<!-- ###################### -->
+<!-- # CORRELACION EN RED # -->
+<!-- ###################### -->
+
+<!-- ID 111041 - 111050 -->
+<group name="suricata-custom,">
+  <!-- Correlación entre reglas de Suricata y USB -->
+  <rule id="111041" level="5" timeframe="120">
+    <if_matched_sid>111001</if_matched_sid>
+    <if_sid>86601</if_sid>
+    <description>Windows: Posible exfiltración, conexión de un USB y una URL sospechosa ($(http.hostname) $(tls.sni)).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+
+  <!-- Correlación entre reglas de Suricata y USB -->
+  <rule id="111042" level="5" timeframe="120">
+    <if_matched_sid>111011</if_matched_sid>
+    <if_sid>86601</if_sid>
+    <description>Linux: Posible exfiltración, conexión de un USB y una URL sospechosa ($(http.hostname) $(tls.sni)).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+
+  <rule id="111043" level="5">
+    <if_sid>111031</if_sid>
+    <field name="activity">^http$</field>
+    <description>Suricata: Contenido de la conexión sospechosa a través de $(protocol) a la URL $(url).</description>
+  </rule>
+</group>
+
+<!-- #################################### -->
+<!-- # REGLAS FUERA DEL HORARIO LABORAL # -->
+<!-- #################################### -->
+
+<!-- ID 111051 - 111060 -->
+<group name="outside-work-custom,">
+  <rule id="111051" level="5">
+    <if_sid>111001, 111011, 111021</if_sid>
+    <time>19:00 - 8:30</time>
+    <description>USB: Posible exfiltración, conexión de un USB fuera del horario laboral.</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="111052" level="5">
+    <if_sid>111001, 111011, 111021</if_sid>
+    <weekday>weekends</weekday>
+    <description>USB: Posible exfiltración, conexión de un USB fuera del horario laboral.</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+    </mitre>
+  </rule>
+  
+  <rule id="111053" level="7">
+    <if_sid>111041, 111042</if_sid>
+    <time>19:00 - 8:30</time>
+    <description>USB: Posible exfiltración, conexión de un USB y una URL sospechosa fuera del horario laboral.</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+
+  <rule id="111054" level="7">
+    <if_sid>111041, 111042</if_sid>
+    <weekday>weekends</weekday>
+    <description>USB: Posible exfiltración, conexión de un USB y una URL sospechosa fuera del horario laboral.</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1025</id>
+      <id>T1052.001</id>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+</group>
+
+
+<!-- #################################### -->
+<!-- #       REGLAS PROPIAS EMAIL       # -->
+<!-- #################################### -->
+
+<!-- ID 111061 - 111070 -->
+
+<group name="email-log-custom,">
+  <!-- Monitorización dentro de un USB: añadir -->
+
+  <rule id="111062" level="5">
+    <field name="actividad">^email_sent$</field>
+    <description>Se ha enviado un correo electrónio por el usuario $(User) en el ordenador $(PC).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1567.002</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+</group>
+
+
+<!-- #################################### -->
+<!-- #      REGLAS PROPIAS ARCHIVOS     # -->
+<!-- #################################### -->
+
+<!-- ID 111071 - 111080 -->
+
+<group name="file-log-custom,">
+  <!-- Monitorización dentro de un USB: añadir -->
+
+  <rule id="111072" level="5">
+    <field name="actividad">^email_sent_with_file$</field>
+    <description>Se ha enviado un correo electrónio por el usuario $(User) en el ordenador $(PC) con archivos adjuntos: Información del archivo adjunto: Filename: $(filename), Contenido: $(content).</description>
+    <mitre>
+      <id>T1005</id>
+      <id>T1567.002</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+</group>
+
+<!-- #################################### -->
+<!-- #    REGLAS PROPIAS NAVEGACION     # -->
+<!-- #################################### -->
+
+<!-- ID 111081 - 111090 -->
+
+<group name="navigation-log-custom,">
+  <!-- Monitorización dentro de un USB: añadir -->
+
+  <rule id="111082" level="5">
+    <field name="actividad">^url_visited$</field>
+    <description>El usuario $(User) en el ordenador $(PC) a accedido a la URL: $(url).</description>
+    <mitre>
+      <id>T1189</id>
+      <id>T1071.001</id>
+    </mitre>
+    <group>syscheck,syscheck_entry_added,syscheck_file,nist_800_53_SI.7</group>
+  </rule>
+</group>
+
+
+<group name="ossec,">
+  <rule id="100050" level="0">
+    <if_sid>530</if_sid>
+    <match>^ossec: output: 'process list'</match>
+    <description>List of running processes.</description>
+    <group>spedia,process_monitor,</group>
+  </rule>
+
+  <rule id="100051" level="7" ignore="900">
+    <if_sid>100050</if_sid>
+    <match>nc -l</match>
+    <description>netcat listening for incoming connections.</description>
+    <group>spedia,process_monitor,</group>
+  </rule>
+</group>
+
+<group name="audit">
+  <rule id="100210" level="12">
+      <if_sid>80792</if_sid>
+  <list field="audit.command" lookup="match_key_value" check_value="red">etc/lists/suspicious-programs</list>
+    <description>Audit: Highly Suspicious Command executed: $(audit.exe)</description>
+      <group>spedia,audit_command,</group>
+  </rule>
+
+  <rule id="100211" level="8">
+      <if_sid>80792</if_sid>
+  <list field="audit.command" lookup="match_key_value" check_value="orange">etc/lists/suspicious-programs</list>
+    <description>Audit: Midly Suspicious Command executed: $(audit.exe)</description>
+      <group>spedia,audit_command,</group>
+  </rule>
+
+  <rule id="100212" level="5">
+      <if_sid>80792</if_sid>
+  <list field="audit.command" lookup="match_key_value" check_value="yellow">etc/lists/suspicious-programs</list>
+    <description>Audit: Lowly Suspicious Command executed: $(audit.exe)</description>
+      <group>spedia,audit_command,</group>
+  </rule>
+
+  <rule id="100213" level="3">
+      <if_sid>80792</if_sid>     
+  <list field="audit.command" lookup="match_key_value" check_value="green">etc/lists/suspicious-programs</list>
+    <description>Audit: Non Suspicious Command executed: $(audit.exe)</description>
+      <group>spedia,audit_command,</group>
+  </rule>
+
+</group>
