@@ -1,4 +1,4 @@
-# USB Monitor — Monitorización de USB
+# Monitorización de USB
 
 Este proyecto contiene un programa en Python diseñado para **detectar la inserción y actividad en memorias USB extraíbles**, con el objetivo de monitorizar posibles intentos de **exfiltración de información**.
 
